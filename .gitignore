@@ -1,0 +1,4 @@
+.DS_Store
+dataset/.DS_Store
+dataset/imgs/*
+dataset/download.logs
