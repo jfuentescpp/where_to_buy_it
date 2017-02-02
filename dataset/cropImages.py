@@ -1,4 +1,6 @@
 
+from queue import Queue
+from threading import Thread
 import json
 import re
 import os
@@ -11,6 +13,10 @@ BASE_CROP_DIRECTORY = 'croped'
 ## Directory where all photos were downloaded
 BASE_IMG_DIRECTORY = 'imgs'
 
+partitions = ['train', 'test']
+categories = ['bags', 'belts', 'dresses', 'eyewear', 'footwear', 'hats', 'leggings', 'outerwear', 'pants', 'skirts', 'tops']
+
+
 """
     Crop all images bounding boxes described in json_file.
 
@@ -18,31 +24,18 @@ BASE_IMG_DIRECTORY = 'imgs'
     @source_dir: directory where all images where downloaded.
     @dest_dir: directory where croped image will be saved.
 """
-def cropImages (json_file, source_dir, dest_dir): #'meta/json/test_pairs_hats.json', 'imgs/hats/test'
+def cropImages (photo_id, img_name, source_dir, dest_dir): #'meta/json/test_pairs_hats.json', 'imgs/hats/test'
 
-    with open(json_file) as data_file:
-        data = json.load(data_file)
+    #open image file from source_dir
+    im = Image.open(source_dir + "/" + img_name)
+    #crop image
+    croppedImage = im.crop((bbox['left'],
+        bbox['top'],
+        bbox['left']+bbox['width'],
+        bbox['top']+bbox['height']))
 
-    boxes = {}
-
-    for row in data:
-        #Read data from json
-        photo_id = row['photo']
-        product = row['product']
-        bbox = row['bbox']
-
-        #name of saved image file
-        img_name = int(photo_id) + ".jpeg"
-        #open image file from source_dir
-        im = Image.open(source_dir + "/" + f)
-        #crop image
-        croppedImage = im.crop((bbox['left'],
-            bbox['top'],
-            bbox['left']+bbox['width'],
-            bbox['top']+bbox['height']))
-
-        #save croped image
-        croppedImage.save(dest_dir + "/" + image_file_name(product, photo_id))
+    #save croped image
+    croppedImage.save(dest_dir + "/" + image_file_name(product, photo_id))
 
 crop_queue = Queue()
 
@@ -59,30 +52,45 @@ def create_needed_directories():
                 os.makedirs( directory_path(category, partition) )
 
 def directory_path(category, partition):
-    '{}/{}/{}'.format(BASE_CROP_DIRECTORY, category, partition)
+    return '{}/{}/{}'.format(BASE_CROP_DIRECTORY, category, partition)
 
+
+def read_all_json_files():
+    for category in categories:
+        for partition in partitions:
+
+            json_file = 'meta/json/{}_pairs_{}.json'.format(partition, category)
+            dest_dir = directory_path(category, partition)
+
+            with open(json_file) as data_file:
+                data = json.load(data_file)
+
+            for row in data:
+                #Read data from json
+                photo_id = row['photo']
+                product = row['product']
+                bbox = row['bbox']
+
+                #name of saved image file
+                img_name = '{}.jpeg'.format(int(photo_id))
+                crop_queue.put((photo_id, img_name, dest_dir))
+
+            print(dest_dir)
+            print('{}\n'.format(crop_queue.qsize()))
 """
     Start croping all images. Ensure that destiny directory already exists.
 """
 def start_async_crop():
-    partitions = ['train', 'test']
-    categories = ['bags', 'belts', 'dresses', 'eyewear', 'footwear', 'hats', 'leggings', 'outerwear', 'pants', 'skirts', 'tops']
+    read_all_json_files()
 
-    for category in categories:
-        for partition in partitions:
-            #Set to crop all pictures
-            json_file = 'meta/json/{}_pairs_{}.json'.format(partition, category)
-            dest_dir = directory_path(category, partition)
-            crop_queue.put((json_file, dest_dir))
-
-    print('Set to crop {} pictures'.format(crop_queue.qsize()))
+    print('Set to crop {} images'.format(crop_queue.qsize()))
 
     #Each worker that consume items from photos_queue
     def worker():
-        while not photos_queue.empty():
-            json_file, dest_dir = crop_queue.get()
+        while not crop_queue.empty():
+            photo_id, img_name, dest_dir = crop_queue.get()
             #proccess item
-            cropImages(json_file,BASE_IMG_DIRECTORY, dest_dir)
+            cropImages(photo_id, img_name, BASE_IMG_DIRECTORY, dest_dir)
             crop_queue.task_done()
 
     # Start each worker in a diferent thread
@@ -91,7 +99,7 @@ def start_async_crop():
         t.daemon = True
         t.start()
 
-    photos_queue.join()
+    crop_queue.join()
     print("All tasks completed")
 
 if __name__ == '__main__':
