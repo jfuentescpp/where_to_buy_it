@@ -75,8 +75,7 @@ def read_all_json_files():
                 img_name = '{}.jpeg'.format(int(photo_id))
                 crop_queue.put((photo_id, img_name, dest_dir))
 
-            print(dest_dir)
-            print('{}\n'.format(crop_queue.qsize()))
+
 """
     Start croping all images. Ensure that destiny directory already exists.
 """
