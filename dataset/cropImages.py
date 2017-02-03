@@ -9,9 +9,9 @@ from PIL import Image
 
 
 ## Directory where all photos will be croped
-BASE_CROP_DIRECTORY = 'croped'
+BASE_CROP_DIRECTORY = '/media/jfuentes/B862FCCA62FC8DFE/Docs/WhereToBuyIt/croped'
 ## Directory where all photos were downloaded
-BASE_IMG_DIRECTORY = 'imgs'
+BASE_IMG_DIRECTORY = '/media/jfuentes/B862FCCA62FC8DFE/Docs/WhereToBuyIt/imgs'
 
 partitions = ['train', 'test']
 categories = ['bags', 'belts', 'dresses', 'eyewear', 'footwear', 'hats', 'leggings', 'outerwear', 'pants', 'skirts', 'tops']
@@ -24,8 +24,11 @@ categories = ['bags', 'belts', 'dresses', 'eyewear', 'footwear', 'hats', 'leggin
     @source_dir: directory where all images where downloaded.
     @dest_dir: directory where croped image will be saved.
 """
-def cropImages (photo_id, img_name, source_dir, dest_dir): #'meta/json/test_pairs_hats.json', 'imgs/hats/test'
-
+def cropImages (photo_id, product, bbox, source_dir, dest_dir): 
+	
+    #name of saved image file
+    img_name = '{}.jpeg'.format(int(photo_id))
+    
     #open image file from source_dir
     im = Image.open(source_dir + "/" + img_name)
     #crop image
@@ -71,9 +74,7 @@ def read_all_json_files():
                 product = row['product']
                 bbox = row['bbox']
 
-                #name of saved image file
-                img_name = '{}.jpeg'.format(int(photo_id))
-                crop_queue.put((photo_id, img_name, dest_dir))
+                crop_queue.put((photo_id, product, bbox, dest_dir))
 
 
 """
@@ -87,9 +88,14 @@ def start_async_crop():
     #Each worker that consume items from photos_queue
     def worker():
         while not crop_queue.empty():
-            photo_id, img_name, dest_dir = crop_queue.get()
-            #proccess item
-            cropImages(photo_id, img_name, BASE_IMG_DIRECTORY, dest_dir)
+            photo_id, product, bbox, dest_dir = crop_queue.get()
+           
+            try:            
+                #proccess item					        
+                cropImages(photo_id, product, bbox, BASE_IMG_DIRECTORY, dest_dir)
+            except :
+                print('{},{},{},{}'.format(photo_id, product,bbox, dest_dir))
+
             crop_queue.task_done()
 
     # Start each worker in a diferent thread
@@ -104,5 +110,5 @@ def start_async_crop():
 if __name__ == '__main__':
     create_needed_directories()
 
-    NUM_WORKER_THREAD = 12
+    NUM_WORKER_THREAD = 4
     start_async_crop()

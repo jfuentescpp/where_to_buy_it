@@ -7,7 +7,7 @@ import shutil
 
 
 ## Directory where all photos will be downloaded
-BASE_IMG_DIRECTORY = 'imgs'
+BASE_IMG_DIRECTORY = '/media/jfuentes/B862FCCA62FC8DFE/Docs/WhereToBuyIt/imgs'
 
 
 """
