@@ -5,7 +5,7 @@ BASE_IMG_DIRECTORY = '/media/jfuentes/B862FCCA62FC8DFE/Docs/WhereToBuyIt/imgs'
 ## Directory where all bottleneck will be cached
 BASE_BOTTLENECK_DIRECTORY = '/media/jfuentes/B862FCCA62FC8DFE/Docs/WhereToBuyIt/bottlenecks'
 ## Directory where Inception model was downloaded
-INCEPTION_MODEL_DIR =  '/media/jfuentes/B862FCCA62FC8DFE/Docs/WhereToBuyIt/Inception_Model'
+INCEPTION_MODEL_DIR =  'Inception_Model'
 
 partitions = ['train', 'test']
 categories = ['bags', 'belts', 'dresses', 'eyewear', 'footwear', 'hats', 'leggings', 'outerwear', 'pants', 'skirts', 'tops']

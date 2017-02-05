@@ -87,6 +87,10 @@ def create_inception_graph(model_dir):
     Graph holding the trained Inception network, and various tensors we'll be
     manipulating.
   """
+  BOTTLENECK_TENSOR_NAME = 'pool_3/_reshape:0'
+  JPEG_DATA_TENSOR_NAME = 'DecodeJpeg/contents:0'
+  RESIZED_INPUT_TENSOR_NAME = 'ResizeBilinear:0'
+
   with tf.Session() as sess:
     model_filename = os.path.join(
         model_dir, 'classify_image_graph_def.pb')
@@ -100,10 +104,39 @@ def create_inception_graph(model_dir):
               RESIZED_INPUT_TENSOR_NAME]))
   return sess.graph, bottleneck_tensor, jpeg_data_tensor, resized_input_tensor
 
+def maybe_download_and_extract(model_dir):
+    DATA_URL = 'http://download.tensorflow.org/models/image/imagenet/inception-2015-12-05.tgz'
+  """Download and extract model tar file.
+
+  If the pretrained model we're using doesn't already exist, this function
+  downloads it from the TensorFlow.org website and unpacks it into a directory.
+  """
+  dest_directory = model_dir
+  if not os.path.exists(dest_directory):
+    os.makedirs(dest_directory)
+  filename = DATA_URL.split('/')[-1]
+  filepath = os.path.join(dest_directory, filename)
+  if not os.path.exists(filepath):
+
+    def _progress(count, block_size, total_size):
+      sys.stdout.write('\r>> Downloading %s %.1f%%' %
+                       (filename,
+                        float(count * block_size) / float(total_size) * 100.0))
+      sys.stdout.flush()
+
+    filepath, _ = urllib.request.urlretrieve(DATA_URL,
+                                             filepath,
+                                             _progress)
+    print()
+    statinfo = os.stat(filepath)
+    print('Successfully downloaded', filename, statinfo.st_size, 'bytes.')
+  tarfile.open(filepath, 'r:gz').extractall(dest_directory)
 
 def start_async_bottleneck_cache():
     """Calculate bottleneck of all cropped images.
     """
+    maybe_download_and_extract(INCEPTION_MODEL_DIR)
+
     session = tf.Session()
     graph, bottleneck_tensor, jpeg_data_tensor, resized_image_tensor = create_inception_graph(INCEPTION_MODEL_DIR)
 
