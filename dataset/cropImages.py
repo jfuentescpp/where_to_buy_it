@@ -24,11 +24,11 @@ categories = ['bags', 'belts', 'dresses', 'eyewear', 'footwear', 'hats', 'leggin
     @source_dir: directory where all images where downloaded.
     @dest_dir: directory where croped image will be saved.
 """
-def cropImages (photo_id, product, bbox, source_dir, dest_dir): 
-	
+def cropImages (photo_id, product, bbox, source_dir, dest_dir):
+
     #name of saved image file
     img_name = '{}.jpeg'.format(int(photo_id))
-    
+
     #open image file from source_dir
     im = Image.open(source_dir + "/" + img_name)
     #crop image
@@ -45,8 +45,8 @@ crop_queue = Queue()
 """
     Name of image that correspond to a product in a photo.
 """
-def image_file_name(product, photo):
-    return '{}@{}.jpeg'.format(photo, product)
+def image_file_name(product, photo_id):
+    return '{}@{}.jpeg'.format(photo_id, product)
 
 def create_needed_directories():
     for category in categories:
@@ -74,7 +74,15 @@ def read_all_json_files():
                 product = row['product']
                 bbox = row['bbox']
 
-                crop_queue.put((photo_id, product, bbox, dest_dir))
+                if not is_photo_cropped(product, photo_id)
+                    crop_queue.put((photo_id, product, bbox, dest_dir))
+
+"""
+    Check whether a photo is already cropped
+"""
+def is_photo_cropped(product, photo_id):
+    return os.path.isfile(image_file_name(product, photo_id))
+
 
 
 """
@@ -89,9 +97,9 @@ def start_async_crop():
     def worker():
         while not crop_queue.empty():
             photo_id, product, bbox, dest_dir = crop_queue.get()
-           
-            try:            
-                #proccess item					        
+
+            try:
+                #proccess item
                 cropImages(photo_id, product, bbox, BASE_IMG_DIRECTORY, dest_dir)
             except :
                 print('{},{},{},{}'.format(photo_id, product,bbox, dest_dir))
