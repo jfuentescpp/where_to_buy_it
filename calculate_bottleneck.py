@@ -3,6 +3,7 @@ import os.path
 import urllib.request
 import sys
 import tarfile
+from queue import Queue
 
 from tensorflow.python.platform import gfile
 import tensorflow as tf
@@ -15,6 +16,16 @@ def get_image_list(image_dir, category, partition):
     file_glob = os.path.join(image_dir, category, partition, '*.jpeg')
     file_list = gfile.Glob(file_glob)
     return file_list
+
+image_queue = Queue()
+
+def worker():
+    while not image_queue.empty():
+        (sess, category_bottleneck_dir, img, bottleneck_tensor) = image_queue.get()
+#         print(img)
+        #create each bottleneck
+        cache_image(sess, category_bottleneck_dir, img, bottleneck_tensor)
+        image_queue.task_done()
 
 def cache_category(sess, image_dir, category, partition, bottleneck_dir, bottleneck_tensor):
     #get list of image to calculate bottleneck
