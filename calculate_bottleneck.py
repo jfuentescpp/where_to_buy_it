@@ -4,6 +4,7 @@ import urllib.request
 import sys
 import tarfile
 from queue import Queue
+from threading import Thread
 
 from tensorflow.python.platform import gfile
 import tensorflow as tf
@@ -21,24 +22,24 @@ image_queue = Queue()
 
 def worker():
     while not image_queue.empty():
-        (sess, category_bottleneck_dir, img, bottleneck_tensor) = image_queue.get()
+        (sess, category_bottleneck_dir, img, bottleneck_tensor, jpeg_data_tensor) = image_queue.get()
 #         print(img)
         #create each bottleneck
-        cache_image(sess, category_bottleneck_dir, img, bottleneck_tensor)
+        cache_image(sess, category_bottleneck_dir, img, bottleneck_tensor, jpeg_data_tensor)
         image_queue.task_done()
 
-def cache_category(sess, image_dir, category, partition, bottleneck_dir, bottleneck_tensor):
+def cache_category(sess, image_dir, category, partition, bottleneck_dir, bottleneck_tensor, jpeg_data_tensor):
     #get list of image to calculate bottleneck
     image_list = get_image_list(image_dir, category, partition)
     print('{} images considered to calculate bottleneck in category: {} partition: {}'.format(len(image_list), category, partition))
 
-    category_bottleneck_dir = '{}/{}/{}/'.format(bottleneck_dir,category, partition)
+    category_bottleneck_dir = '{}/{}/{}'.format(bottleneck_dir,category, partition)
     #create dir for bottlenecks if it doesn't exist
     os.makedirs(category_bottleneck_dir, exist_ok=True)
 
     #enqueue each image
     for img_path in image_list:
-        image_queue.put((sess, category_bottleneck_dir, img_path, bottleneck_tensor))
+        image_queue.put((sess, category_bottleneck_dir, img_path, bottleneck_tensor, jpeg_data_tensor))
 
     for i in range(NUM_WORKER_THREAD):
         t = Thread(target=worker)
@@ -49,7 +50,7 @@ def cache_category(sess, image_dir, category, partition, bottleneck_dir, bottlen
     print("Cache category: {} partition: {} completed".format(category, partition))
 
 
-def cache_image(sess, category_bottleneck_dir, image_path, bottleneck_tensor):
+def cache_image(sess, category_bottleneck_dir, image_path, bottleneck_tensor, jpeg_data_tensor):
     """
         Calculate and save bottleneck of one image only if it hasn't been
         computed before.
@@ -66,17 +67,19 @@ def cache_image(sess, category_bottleneck_dir, image_path, bottleneck_tensor):
             tf.logging.fatal('File does not exist %s', image_path)
 
         image_data = gfile.FastGFile(image_path, 'rb').read()
-        bottleneck_values = run_bottleneck_on_image(sess, image_data,
+        
+        try:
+            bottleneck_values = run_bottleneck_on_image(sess, image_data,
                                                 jpeg_data_tensor,
                                                 bottleneck_tensor)
-        bottleneck_string = ','.join(str(x) for x in bottleneck_values)
+            bottleneck_string = ','.join(str(x) for x in bottleneck_values)
 
-        with open(bottleneck_path, 'w') as bottleneck_file:
-            bottleneck_file.write(bottleneck_string)
+            with open(bottleneck_path, 'w') as bottleneck_file:
+                bottleneck_file.write(bottleneck_string)
+        except:
+            print('error procesing image {}'.format(image_path))
 
-
-def run_bottleneck_on_image(sess, image_data, image_data_tensor,
-                            bottleneck_tensor):
+def run_bottleneck_on_image(sess, image_data, image_data_tensor, bottleneck_tensor):
   """Runs inference on an image to extract the 'bottleneck' summary layer.
 
   Args:
@@ -156,7 +159,7 @@ def start_async_bottleneck_cache():
 
     for category in categories:
         for partition in partitions:
-            cache_category(session, BASE_CROP_DIRECTORY, category, partition,BASE_BOTTLENECK_DIRECTORY, bottleneck_tensor)
+            cache_category(session, BASE_CROP_DIRECTORY, category, partition,BASE_BOTTLENECK_DIRECTORY, bottleneck_tensor, jpeg_data_tensor)
 
 
 NUM_WORKER_THREAD = 4
