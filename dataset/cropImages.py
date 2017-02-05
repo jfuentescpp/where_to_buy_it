@@ -6,15 +6,7 @@ import re
 import os
 from pprint import pprint
 from PIL import Image
-
-
-## Directory where all photos will be croped
-BASE_CROP_DIRECTORY = '/media/jfuentes/B862FCCA62FC8DFE/Docs/WhereToBuyIt/croped'
-## Directory where all photos were downloaded
-BASE_IMG_DIRECTORY = '/media/jfuentes/B862FCCA62FC8DFE/Docs/WhereToBuyIt/imgs'
-
-partitions = ['train', 'test']
-categories = ['bags', 'belts', 'dresses', 'eyewear', 'footwear', 'hats', 'leggings', 'outerwear', 'pants', 'skirts', 'tops']
+from ../constants import *
 
 
 """
