@@ -1,5 +1,8 @@
 import numpy as np
 import os.path
+import urllib.request
+import sys
+import tarfile
 
 from tensorflow.python.platform import gfile
 import tensorflow as tf
@@ -15,7 +18,7 @@ def get_image_list(image_dir, category, partition):
 
 def cache_category(sess, image_dir, category, partition, bottleneck_dir, bottleneck_tensor):
     #get list of image to calculate bottleneck
-    image_list = get_image_list(image_dir, category)
+    image_list = get_image_list(image_dir, category, partition)
     print('{} images considered to calculate bottleneck in category: {} partition: {}'.format(len(image_list), category, partition))
 
     category_bottleneck_dir = '{}/{}/{}/'.format(bottleneck_dir,category, partition)
@@ -105,7 +108,7 @@ def create_inception_graph(model_dir):
   return sess.graph, bottleneck_tensor, jpeg_data_tensor, resized_input_tensor
 
 def maybe_download_and_extract(model_dir):
-    DATA_URL = 'http://download.tensorflow.org/models/image/imagenet/inception-2015-12-05.tgz'
+  DATA_URL = 'http://download.tensorflow.org/models/image/imagenet/inception-2015-12-05.tgz'
   """Download and extract model tar file.
 
   If the pretrained model we're using doesn't already exist, this function
